@@ -1,0 +1,7 @@
+apiVersion: samplecontroller.reshnm.de/v1alpha1
+kind: MyResource
+metadata:
+  name: example-myresource
+spec:
+  Message: The Answer
+  SomeValue: 42
