@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"k8s.io/client-go/tools/clientcmd"
@@ -36,7 +38,21 @@ func main() {
 	flag.Parse()
 
 	client := createClient()
-	informers.NewSharedInformerFactory(client, time.Second * 30)
+	myresourceInformerFactory := informers.NewSharedInformerFactory(client, time.Second * 30)
+
+	controller := CreateController(client, myresourceInformerFactory.Samplecontroller().V1alpha1().MyResources())
+
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+	myresourceInformerFactory.Start(stopCh)
+	go controller.Run(stopCh)
+
+	sigTerm := make(chan os.Signal, 1)
+	signal.Notify(sigTerm, syscall.SIGTERM)
+	signal.Notify(sigTerm, syscall.SIGINT)
+	<-sigTerm
+
+	klog.Info("controller stopped")
 }
 
 func init() {
