@@ -28,25 +28,34 @@ func CreateController(clientset *clientset.Clientset, myresourceInformer v1alpha
 
 	myresourceInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			key, err := cache.MetaNamespaceKeyFunc(obj)
-			klog.Info("Add Myresource:", key)
-			if err == nil {
-				controller.workqueue.Add(key)
+			var key string
+			var err error
+			if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
+				utilruntime.HandleError(err)
+				return
 			}
+			klog.Info("Add Myresource:", key)
+			controller.workqueue.Add(key)
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
-			key, err := cache.MetaNamespaceKeyFunc(newObj)
-			klog.Info("Update Myresource", key)
-			if err == nil {
-				controller.workqueue.Add(key)
+			var key string
+			var err error
+			if key, err = cache.MetaNamespaceKeyFunc(newObj); err != nil {
+				utilruntime.HandleError(err)
+				return
 			}
+			klog.Info("Update Myresource:", key)
+			controller.workqueue.Add(key)
 		},
 		DeleteFunc: func(obj interface{}) {
-			key, err := cache.MetaNamespaceKeyFunc(obj)
-			klog.Info("Delete Myresource", key)
-			if err == nil {
-				controller.workqueue.Add(key)
+			var key string
+			var err error
+			if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
+				utilruntime.HandleError(err)
+				return
 			}
+			klog.Info("Delete Myresource:", key)
+			controller.workqueue.Add(key)
 		},
 	})
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 	"os/signal"
 	"syscall"
@@ -38,7 +39,10 @@ func main() {
 	flag.Parse()
 
 	client := createClient()
-	myresourceInformerFactory := informers.NewSharedInformerFactory(client, time.Second * 30)
+	myresourceInformerFactory := informers.NewSharedInformerFactoryWithOptions(
+		client,
+		time.Second * 30,
+		informers.WithNamespace(metav1.NamespaceDefault))
 
 	controller := CreateController(client, myresourceInformerFactory.Samplecontroller().V1alpha1().MyResources())
 
