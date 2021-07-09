@@ -5,11 +5,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/reshnm/k8s-sample-controller-crd/pkg/apis/myresource"
+	"github.com/reshnm/k8s-sample-controller-crd/pkg/apis/samplecontroller"
 )
 
 var SchemeGroupVersion = schema.GroupVersion{
-	Group: myresource.GroupName,
+	Group:   samplecontroller.GroupName,
 	Version: "v1alpha1",
 }
 

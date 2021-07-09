@@ -4,8 +4,8 @@ package fake
 
 import (
 	clientset "github.com/reshnm/k8s-sample-controller-crd/pkg/generated/clientset/versioned"
-	myresourcev1alpha1 "github.com/reshnm/k8s-sample-controller-crd/pkg/generated/clientset/versioned/typed/myresource/v1alpha1"
-	fakemyresourcev1alpha1 "github.com/reshnm/k8s-sample-controller-crd/pkg/generated/clientset/versioned/typed/myresource/v1alpha1/fake"
+	samplecontrollerv1alpha1 "github.com/reshnm/k8s-sample-controller-crd/pkg/generated/clientset/versioned/typed/samplecontroller/v1alpha1"
+	fakesamplecontrollerv1alpha1 "github.com/reshnm/k8s-sample-controller-crd/pkg/generated/clientset/versioned/typed/samplecontroller/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -60,7 +60,7 @@ func (c *Clientset) Tracker() testing.ObjectTracker {
 
 var _ clientset.Interface = &Clientset{}
 
-// MyresourceV1alpha1 retrieves the MyresourceV1alpha1Client
-func (c *Clientset) MyresourceV1alpha1() myresourcev1alpha1.MyresourceV1alpha1Interface {
-	return &fakemyresourcev1alpha1.FakeMyresourceV1alpha1{Fake: &c.Fake}
+// SamplecontrollerV1alpha1 retrieves the SamplecontrollerV1alpha1Client
+func (c *Clientset) SamplecontrollerV1alpha1() samplecontrollerv1alpha1.SamplecontrollerV1alpha1Interface {
+	return &fakesamplecontrollerv1alpha1.FakeSamplecontrollerV1alpha1{Fake: &c.Fake}
 }

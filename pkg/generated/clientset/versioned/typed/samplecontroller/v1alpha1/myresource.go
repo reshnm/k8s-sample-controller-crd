@@ -6,7 +6,7 @@ import (
 	"context"
 	"time"
 
-	v1alpha1 "github.com/reshnm/k8s-sample-controller-crd/pkg/apis/myresource/v1alpha1"
+	v1alpha1 "github.com/reshnm/k8s-sample-controller-crd/pkg/apis/samplecontroller/v1alpha1"
 	scheme "github.com/reshnm/k8s-sample-controller-crd/pkg/generated/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -40,7 +40,7 @@ type myResources struct {
 }
 
 // newMyResources returns a MyResources
-func newMyResources(c *MyresourceV1alpha1Client, namespace string) *myResources {
+func newMyResources(c *SamplecontrollerV1alpha1Client, namespace string) *myResources {
 	return &myResources{
 		client: c.RESTClient(),
 		ns:     namespace,

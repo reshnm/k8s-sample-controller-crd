@@ -6,10 +6,10 @@ import (
 	"context"
 	time "time"
 
-	myresourcev1alpha1 "github.com/reshnm/k8s-sample-controller-crd/pkg/apis/myresource/v1alpha1"
+	samplecontrollerv1alpha1 "github.com/reshnm/k8s-sample-controller-crd/pkg/apis/samplecontroller/v1alpha1"
 	versioned "github.com/reshnm/k8s-sample-controller-crd/pkg/generated/clientset/versioned"
 	internalinterfaces "github.com/reshnm/k8s-sample-controller-crd/pkg/generated/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/reshnm/k8s-sample-controller-crd/pkg/generated/listers/myresource/v1alpha1"
+	v1alpha1 "github.com/reshnm/k8s-sample-controller-crd/pkg/generated/listers/samplecontroller/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -46,16 +46,16 @@ func NewFilteredMyResourceInformer(client versioned.Interface, namespace string,
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.MyresourceV1alpha1().MyResources(namespace).List(context.TODO(), options)
+				return client.SamplecontrollerV1alpha1().MyResources(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.MyresourceV1alpha1().MyResources(namespace).Watch(context.TODO(), options)
+				return client.SamplecontrollerV1alpha1().MyResources(namespace).Watch(context.TODO(), options)
 			},
 		},
-		&myresourcev1alpha1.MyResource{},
+		&samplecontrollerv1alpha1.MyResource{},
 		resyncPeriod,
 		indexers,
 	)
@@ -66,7 +66,7 @@ func (f *myResourceInformer) defaultInformer(client versioned.Interface, resyncP
 }
 
 func (f *myResourceInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&myresourcev1alpha1.MyResource{}, f.defaultInformer)
+	return f.factory.InformerFor(&samplecontrollerv1alpha1.MyResource{}, f.defaultInformer)
 }
 
 func (f *myResourceInformer) Lister() v1alpha1.MyResourceLister {

@@ -9,7 +9,7 @@ import (
 
 	versioned "github.com/reshnm/k8s-sample-controller-crd/pkg/generated/clientset/versioned"
 	internalinterfaces "github.com/reshnm/k8s-sample-controller-crd/pkg/generated/informers/externalversions/internalinterfaces"
-	myresource "github.com/reshnm/k8s-sample-controller-crd/pkg/generated/informers/externalversions/myresource"
+	samplecontroller "github.com/reshnm/k8s-sample-controller-crd/pkg/generated/informers/externalversions/samplecontroller"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -156,9 +156,9 @@ type SharedInformerFactory interface {
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
-	Myresource() myresource.Interface
+	Samplecontroller() samplecontroller.Interface
 }
 
-func (f *sharedInformerFactory) Myresource() myresource.Interface {
-	return myresource.New(f, f.namespace, f.tweakListOptions)
+func (f *sharedInformerFactory) Samplecontroller() samplecontroller.Interface {
+	return samplecontroller.New(f, f.namespace, f.tweakListOptions)
 }

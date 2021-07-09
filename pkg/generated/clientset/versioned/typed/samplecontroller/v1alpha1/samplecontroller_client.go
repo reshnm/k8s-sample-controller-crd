@@ -3,27 +3,27 @@
 package v1alpha1
 
 import (
-	v1alpha1 "github.com/reshnm/k8s-sample-controller-crd/pkg/apis/myresource/v1alpha1"
+	v1alpha1 "github.com/reshnm/k8s-sample-controller-crd/pkg/apis/samplecontroller/v1alpha1"
 	"github.com/reshnm/k8s-sample-controller-crd/pkg/generated/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
 )
 
-type MyresourceV1alpha1Interface interface {
+type SamplecontrollerV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	MyResourcesGetter
 }
 
-// MyresourceV1alpha1Client is used to interact with features provided by the myresource.reshnm.de group.
-type MyresourceV1alpha1Client struct {
+// SamplecontrollerV1alpha1Client is used to interact with features provided by the samplecontroller.reshnm.de group.
+type SamplecontrollerV1alpha1Client struct {
 	restClient rest.Interface
 }
 
-func (c *MyresourceV1alpha1Client) MyResources(namespace string) MyResourceInterface {
+func (c *SamplecontrollerV1alpha1Client) MyResources(namespace string) MyResourceInterface {
 	return newMyResources(c, namespace)
 }
 
-// NewForConfig creates a new MyresourceV1alpha1Client for the given config.
-func NewForConfig(c *rest.Config) (*MyresourceV1alpha1Client, error) {
+// NewForConfig creates a new SamplecontrollerV1alpha1Client for the given config.
+func NewForConfig(c *rest.Config) (*SamplecontrollerV1alpha1Client, error) {
 	config := *c
 	if err := setConfigDefaults(&config); err != nil {
 		return nil, err
@@ -32,12 +32,12 @@ func NewForConfig(c *rest.Config) (*MyresourceV1alpha1Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &MyresourceV1alpha1Client{client}, nil
+	return &SamplecontrollerV1alpha1Client{client}, nil
 }
 
-// NewForConfigOrDie creates a new MyresourceV1alpha1Client for the given config and
+// NewForConfigOrDie creates a new SamplecontrollerV1alpha1Client for the given config and
 // panics if there is an error in the config.
-func NewForConfigOrDie(c *rest.Config) *MyresourceV1alpha1Client {
+func NewForConfigOrDie(c *rest.Config) *SamplecontrollerV1alpha1Client {
 	client, err := NewForConfig(c)
 	if err != nil {
 		panic(err)
@@ -45,9 +45,9 @@ func NewForConfigOrDie(c *rest.Config) *MyresourceV1alpha1Client {
 	return client
 }
 
-// New creates a new MyresourceV1alpha1Client for the given RESTClient.
-func New(c rest.Interface) *MyresourceV1alpha1Client {
-	return &MyresourceV1alpha1Client{c}
+// New creates a new SamplecontrollerV1alpha1Client for the given RESTClient.
+func New(c rest.Interface) *SamplecontrollerV1alpha1Client {
+	return &SamplecontrollerV1alpha1Client{c}
 }
 
 func setConfigDefaults(config *rest.Config) error {
@@ -65,7 +65,7 @@ func setConfigDefaults(config *rest.Config) error {
 
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
-func (c *MyresourceV1alpha1Client) RESTClient() rest.Interface {
+func (c *SamplecontrollerV1alpha1Client) RESTClient() rest.Interface {
 	if c == nil {
 		return nil
 	}

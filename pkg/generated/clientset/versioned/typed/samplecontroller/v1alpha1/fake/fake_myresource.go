@@ -5,7 +5,7 @@ package fake
 import (
 	"context"
 
-	v1alpha1 "github.com/reshnm/k8s-sample-controller-crd/pkg/apis/myresource/v1alpha1"
+	v1alpha1 "github.com/reshnm/k8s-sample-controller-crd/pkg/apis/samplecontroller/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -16,13 +16,13 @@ import (
 
 // FakeMyResources implements MyResourceInterface
 type FakeMyResources struct {
-	Fake *FakeMyresourceV1alpha1
+	Fake *FakeSamplecontrollerV1alpha1
 	ns   string
 }
 
-var myresourcesResource = schema.GroupVersionResource{Group: "myresource.reshnm.de", Version: "v1alpha1", Resource: "myresources"}
+var myresourcesResource = schema.GroupVersionResource{Group: "samplecontroller.reshnm.de", Version: "v1alpha1", Resource: "myresources"}
 
-var myresourcesKind = schema.GroupVersionKind{Group: "myresource.reshnm.de", Version: "v1alpha1", Kind: "MyResource"}
+var myresourcesKind = schema.GroupVersionKind{Group: "samplecontroller.reshnm.de", Version: "v1alpha1", Kind: "MyResource"}
 
 // Get takes name of the myResource, and returns the corresponding myResource object, and an error if there is any.
 func (c *FakeMyResources) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.MyResource, err error) {
