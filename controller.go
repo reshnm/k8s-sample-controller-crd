@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/reshnm/k8s-sample-controller-crd/pkg/apis/samplecontroller/v1alpha1"
 	"time"
 
+	"github.com/reshnm/k8s-sample-controller-crd/pkg/apis/samplecontroller/v1alpha1"
 	samplecontrollerClientset "github.com/reshnm/k8s-sample-controller-crd/pkg/generated/clientset/versioned"
 	samplecontroller "github.com/reshnm/k8s-sample-controller-crd/pkg/generated/informers/externalversions/samplecontroller/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -35,6 +35,7 @@ func CreateController(
 	samplecontrollerClient *samplecontrollerClientset.Clientset,
 	myresourceInformer samplecontroller.MyResourceInformer,
 	podInformer informercorev1.PodInformer) *Controller {
+
 	controller := &Controller{
 		kubeClient: kubeClient,
 		samplecontrollerClient: samplecontrollerClient,
@@ -73,7 +74,7 @@ func (c *Controller) Run(stopCh <-chan struct{}) {
 
 	klog.Info("starting controller")
 
-	if !cache.WaitForCacheSync(stopCh, c.myresourceSynced) {
+	if !cache.WaitForCacheSync(stopCh, c.myresourceSynced, c.podsSynced) {
 		klog.Fatal("failed to sync cache")
 	}
 
@@ -92,7 +93,6 @@ func (c *Controller) processNextWorkItem() bool {
 	klog.Info("controller process next item")
 
 	obj, shutdown := c.workqueue.Get()
-
 	if shutdown {
 		return false
 	}
@@ -141,7 +141,10 @@ func (c *Controller) syncHandler(key string) error {
 
 	if errors.IsNotFound(err) {
 		klog.Infof("creating pod '%s'", podName)
-		pod, err = c.kubeClient.CoreV1().Pods(namespace).Create(context.TODO(), newPod(myresource, podName), metav1.CreateOptions{})
+		pod, err = c.kubeClient.CoreV1().Pods(namespace).Create(
+			context.TODO(),
+			newPod(myresource, podName),
+			metav1.CreateOptions{})
 
 		if err != nil {
 			return err
@@ -151,21 +154,29 @@ func (c *Controller) syncHandler(key string) error {
 			return fmt.Errorf("pod '%s' is not controlled by samplecontroller", podName)
 		}
 
-		myresourceCopy := myresource.DeepCopy()
-		myresourceCopy.Status.PodName = pod.Name
-		_, err = c.samplecontrollerClient.SamplecontrollerV1alpha1().MyResources(myresource.Namespace).Update(
-			context.TODO(),
-			myresourceCopy,
-			metav1.UpdateOptions{})
-
+		err = c.updateMyResource(myresource, pod)
 		if err != nil {
-			klog.Infof("failed to update status of MyResource '%s'", myresource.Name)
 			return err
 		}
-
-		klog.Infof("updated status of MyResource '%s' with podName '%s'", myresource.Name, pod.Name)
 	}
 
+	return nil
+}
+
+func (c *Controller) updateMyResource(myresource *v1alpha1.MyResource, pod *corev1.Pod) error {
+	myresourceCopy := myresource.DeepCopy()
+	myresourceCopy.Status.PodName = pod.Name
+	_, err := c.samplecontrollerClient.SamplecontrollerV1alpha1().MyResources(myresource.Namespace).Update(
+		context.TODO(),
+		myresourceCopy,
+		metav1.UpdateOptions{})
+
+	if err != nil {
+		klog.Infof("failed to update status of MyResource '%s'", myresource.Name)
+		return err
+	}
+
+	klog.Infof("updated status of MyResource '%s' with podName '%s'", myresource.Name, pod.Name)
 	return nil
 }
 

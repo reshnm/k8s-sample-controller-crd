@@ -2,19 +2,18 @@ package main
 
 import (
 	"flag"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/informers"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	samplecontrollerClientset "github.com/reshnm/k8s-sample-controller-crd/pkg/generated/clientset/versioned"
+	sampleComtrollerInformers "github.com/reshnm/k8s-sample-controller-crd/pkg/generated/informers/externalversions"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
-
-	samplecontrollerClientset "github.com/reshnm/k8s-sample-controller-crd/pkg/generated/clientset/versioned"
-	sampleComtrollerInformers "github.com/reshnm/k8s-sample-controller-crd/pkg/generated/informers/externalversions"
 )
 
 var (
