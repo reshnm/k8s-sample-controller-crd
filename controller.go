@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	clientset "github.com/reshnm/k8s-sample-controller-crd/pkg/generated/clientset/versioned"
 	"github.com/reshnm/k8s-sample-controller-crd/pkg/generated/informers/externalversions/samplecontroller/v1alpha1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
@@ -34,7 +36,7 @@ func CreateController(clientset *clientset.Clientset, myresourceInformer v1alpha
 				utilruntime.HandleError(err)
 				return
 			}
-			klog.Info("Add Myresource:", key)
+			klog.Info("Add Myresource: ", key)
 			controller.workqueue.Add(key)
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
@@ -44,7 +46,7 @@ func CreateController(clientset *clientset.Clientset, myresourceInformer v1alpha
 				utilruntime.HandleError(err)
 				return
 			}
-			klog.Info("Update Myresource:", key)
+			klog.Info("Update Myresource: ", key)
 			controller.workqueue.Add(key)
 		},
 		DeleteFunc: func(obj interface{}) {
@@ -54,7 +56,7 @@ func CreateController(clientset *clientset.Clientset, myresourceInformer v1alpha
 				utilruntime.HandleError(err)
 				return
 			}
-			klog.Info("Delete Myresource:", key)
+			klog.Info("Delete Myresource: ", key)
 			controller.workqueue.Add(key)
 		},
 	})
@@ -86,30 +88,52 @@ func (c *Controller) runWorker() {
 func (c *Controller) processNextWorkItem() bool {
 	klog.Info("controller process next item")
 
-	key, shutdown := c.workqueue.Get()
+	obj, shutdown := c.workqueue.Get()
 
 	if shutdown {
 		return false
 	}
 
-	defer c.workqueue.Done(key)
+	defer c.workqueue.Done(obj)
 
-	keyRaw := key.(string)
-	_, _, err := c.myresourceInformer.Informer().GetIndexer().GetByKey(keyRaw)
+	key, ok := obj.(string)
+	if !ok {
+		c.workqueue.Forget(obj)
+		utilruntime.HandleError(fmt.Errorf("expected string in workqueue but got %#v", obj))
+		return false
+	}
 
+	err := c.syncHandler(key)
 	if err != nil {
-		if c.workqueue.NumRequeues(key) < 5 {
-			klog.Error("failed to process key", key, "with error, retrying ...", err)
-			c.workqueue.AddRateLimited(key)
-		} else {
-			klog.Error("failed to process key", key, "with error, discarding ...", err)
-			c.workqueue.Forget(key)
-			utilruntime.HandleError(err)
-		}
+		c.workqueue.AddRateLimited(obj)
 	} else {
-		c.workqueue.Forget(key)
+		c.workqueue.Forget(obj)
 	}
 
 	return true
+}
+
+func (c *Controller) syncHandler(key string) error {
+	namespace, name, err := cache.SplitMetaNamespaceKey(key)
+	if err != nil {
+		utilruntime.HandleError(fmt.Errorf("invalid key: %s", key))
+		return nil
+	}
+
+	myresource, err := c.myresourceInformer.Lister().MyResources(namespace).Get(name)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			utilruntime.HandleError(fmt.Errorf("MyResource '%s' in workqueue doesn't exist", key))
+			return nil
+		}
+		return err
+	}
+
+	klog.Infof("handling MyResource '%s', message='%s', someValue='%d'",
+		key,
+		myresource.Spec.Message,
+		*myresource.Spec.SomeValue)
+
+	return nil
 }
 
