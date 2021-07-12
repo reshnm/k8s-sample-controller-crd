@@ -90,7 +90,7 @@ func (c *Controller) runWorker() {
 }
 
 func (c *Controller) processNextWorkItem() bool {
-	klog.Info("controller process next item")
+	klog.V(4).Info("controller process next item")
 
 	obj, shutdown := c.workqueue.Get()
 	if shutdown {
@@ -132,7 +132,7 @@ func (c *Controller) syncHandler(key string) error {
 		return err
 	}
 
-	klog.Infof("handling MyResource '%s', message='%s'",
+	klog.V(4).Infof("handling MyResource '%s', message='%s'",
 		key,
 		myresource.Spec.Message)
 
@@ -172,7 +172,7 @@ func (c *Controller) updateMyResource(myresource *v1alpha1.MyResource, pod *core
 		metav1.UpdateOptions{})
 
 	if err != nil {
-		klog.Infof("failed to update status of MyResource '%s'", myresource.Name)
+		klog.Errorf("failed to update status of MyResource '%s'", myresource.Name)
 		return err
 	}
 
@@ -187,7 +187,7 @@ func (c *Controller) enqueueMyResource(obj interface{}) {
 		utilruntime.HandleError(err)
 		return
 	}
-	klog.Info("enqueue Myresource: ", key)
+	klog.V(4).Info("enqueue Myresource: ", key)
 	c.workqueue.Add(key)
 }
 
@@ -207,7 +207,7 @@ func (c *Controller) handlePod(obj interface{}) {
 		klog.Infof("recovered deleted pod '%s' from tombstone", pod.GetName())
 	}
 
-	klog.Infof("handling pod '%s'", pod.GetName())
+	klog.V(4).Infof("handling pod '%s'", pod.GetName())
 	ownerRef := metav1.GetControllerOf(pod)
 	if ownerRef != nil {
 		if ownerRef.Kind != "MyResource" {
@@ -244,13 +244,13 @@ func newPod(myresource *v1alpha1.MyResource, podName string) *corev1.Pod {
 					Name: "echoserver",
 					Image: "reshnm/echoserver:latest",
 					Env: []corev1.EnvVar{
-						corev1.EnvVar{
+						{
 							Name:      "ECHO_MESSAGE",
 							Value:     myresource.Spec.Message,
 						},
 					},
 					Ports: []corev1.ContainerPort{
-						corev1.ContainerPort{
+						{
 							ContainerPort: 80,
 						},
 					},
