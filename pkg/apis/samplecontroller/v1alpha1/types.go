@@ -12,11 +12,15 @@ type MyResource struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec MyResourceSpec `json:"spec"`
+	Status MyResourceStatus `json:"status"`
 }
 
 type MyResourceSpec struct {
 	Message string `json:"message"`
-	SomeValue *int32 `json:"someValue"`
+}
+
+type MyResourceStatus struct {
+	PodName string `json:"podName"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

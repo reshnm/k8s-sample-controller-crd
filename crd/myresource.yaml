@@ -17,8 +17,12 @@ spec:
               properties:
                 message:
                   type: string
-                someValue:
-                  type: integer
+            status:
+              type: object
+              properties:
+                podName:
+                  type: string
+
   names:
     kind: MyResource
     plural: myresources

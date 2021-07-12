@@ -1,64 +1,67 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	clientset "github.com/reshnm/k8s-sample-controller-crd/pkg/generated/clientset/versioned"
-	"github.com/reshnm/k8s-sample-controller-crd/pkg/generated/informers/externalversions/samplecontroller/v1alpha1"
+	"github.com/reshnm/k8s-sample-controller-crd/pkg/apis/samplecontroller/v1alpha1"
+	"time"
+
+	samplecontrollerClientset "github.com/reshnm/k8s-sample-controller-crd/pkg/generated/clientset/versioned"
+	samplecontroller "github.com/reshnm/k8s-sample-controller-crd/pkg/generated/informers/externalversions/samplecontroller/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
+	informercorev1 "k8s.io/client-go/informers/core/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog/v2"
-	"time"
 )
 
 type Controller struct {
-	clientSet *clientset.Clientset
+	kubeClient *kubernetes.Clientset
+	samplecontrollerClient *samplecontrollerClientset.Clientset
 	workqueue workqueue.RateLimitingInterface
-	myresourceInformer v1alpha1.MyResourceInformer
+	myresourceInformer samplecontroller.MyResourceInformer
 	myresourceSynced cache.InformerSynced
+	podInformer informercorev1.PodInformer
+	podsSynced cache.InformerSynced
 }
 
-func CreateController(clientset *clientset.Clientset, myresourceInformer v1alpha1.MyResourceInformer) *Controller {
+func CreateController(
+	kubeClient *kubernetes.Clientset,
+	samplecontrollerClient *samplecontrollerClientset.Clientset,
+	myresourceInformer samplecontroller.MyResourceInformer,
+	podInformer informercorev1.PodInformer) *Controller {
 	controller := &Controller{
-		clientSet: clientset,
+		kubeClient: kubeClient,
+		samplecontrollerClient: samplecontrollerClient,
 		workqueue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Myresource"),
 		myresourceInformer: myresourceInformer,
 		myresourceSynced: myresourceInformer.Informer().HasSynced,
+		podInformer: podInformer,
+		podsSynced: podInformer.Informer().HasSynced,
 	}
 
 	myresourceInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			var key string
-			var err error
-			if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
-				utilruntime.HandleError(err)
-				return
-			}
-			klog.Info("Add Myresource: ", key)
-			controller.workqueue.Add(key)
-		},
+		AddFunc: controller.enqueueMyResource,
 		UpdateFunc: func(oldObj, newObj interface{}) {
-			var key string
-			var err error
-			if key, err = cache.MetaNamespaceKeyFunc(newObj); err != nil {
-				utilruntime.HandleError(err)
-				return
-			}
-			klog.Info("Update Myresource: ", key)
-			controller.workqueue.Add(key)
+			controller.enqueueMyResource(newObj)
 		},
-		DeleteFunc: func(obj interface{}) {
-			var key string
-			var err error
-			if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
-				utilruntime.HandleError(err)
-				return
+	})
+
+	podInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: controller.handlePod,
+		UpdateFunc: func(oldObj, newObj interface{}) {
+			newPod := newObj.(*corev1.Pod)
+			oldPod := oldObj.(*corev1.Pod)
+			if newPod.ResourceVersion != oldPod.ResourceVersion {
+				controller.handlePod(newObj)
 			}
-			klog.Info("Delete Myresource: ", key)
-			controller.workqueue.Add(key)
 		},
+		DeleteFunc: controller.handlePod,
 	})
 
 	return controller
@@ -129,11 +132,119 @@ func (c *Controller) syncHandler(key string) error {
 		return err
 	}
 
-	klog.Infof("handling MyResource '%s', message='%s', someValue='%d'",
+	klog.Infof("handling MyResource '%s', message='%s'",
 		key,
-		myresource.Spec.Message,
-		*myresource.Spec.SomeValue)
+		myresource.Spec.Message)
+
+	podName := fmt.Sprintf("%s-pod", myresource.Name)
+	pod, err := c.kubeClient.CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
+
+	if errors.IsNotFound(err) {
+		klog.Infof("creating pod '%s'", podName)
+		pod, err = c.kubeClient.CoreV1().Pods(namespace).Create(context.TODO(), newPod(myresource, podName), metav1.CreateOptions{})
+
+		if err != nil {
+			return err
+		}
+
+		if !metav1.IsControlledBy(pod, myresource) {
+			return fmt.Errorf("pod '%s' is not controlled by samplecontroller", podName)
+		}
+
+		myresourceCopy := myresource.DeepCopy()
+		myresourceCopy.Status.PodName = pod.Name
+		_, err = c.samplecontrollerClient.SamplecontrollerV1alpha1().MyResources(myresource.Namespace).Update(
+			context.TODO(),
+			myresourceCopy,
+			metav1.UpdateOptions{})
+
+		if err != nil {
+			klog.Infof("failed to update status of MyResource '%s'", myresource.Name)
+			return err
+		}
+
+		klog.Infof("updated status of MyResource '%s' with podName '%s'", myresource.Name, pod.Name)
+	}
 
 	return nil
 }
 
+func (c *Controller) enqueueMyResource(obj interface{}) {
+	var key string
+	var err error
+	if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
+		utilruntime.HandleError(err)
+		return
+	}
+	klog.Info("enqueue Myresource: ", key)
+	c.workqueue.Add(key)
+}
+
+func (c *Controller) handlePod(obj interface{}) {
+	pod, ok := obj.(metav1.Object)
+	if !ok {
+		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
+		if !ok {
+			utilruntime.HandleError(fmt.Errorf("error decoding pod, invalid type"))
+			return
+		}
+		pod, ok = tombstone.Obj.(metav1.Object)
+		if !ok {
+			utilruntime.HandleError(fmt.Errorf("error decoding pod tombstone, invalid type"))
+			return
+		}
+		klog.Infof("recovered deleted pod '%s' from tombstone", pod.GetName())
+	}
+
+	klog.Infof("handling pod '%s'", pod.GetName())
+	ownerRef := metav1.GetControllerOf(pod)
+	if ownerRef != nil {
+		if ownerRef.Kind != "MyResource" {
+			return
+		}
+
+		myresource, err := c.myresourceInformer.Lister().MyResources(pod.GetNamespace()).Get(ownerRef.Name)
+		if err != nil {
+			klog.Infof("ignoring orphaned pod '%s' of MyResource '%s'", pod.GetSelfLink(), ownerRef.Name)
+			return
+		}
+
+		c.enqueueMyResource(myresource)
+	}
+}
+
+func newPod(myresource *v1alpha1.MyResource, podName string) *corev1.Pod {
+	labels := map[string]string{
+		"app": "echoserver",
+		"controller": myresource.Name,
+	}
+	return &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: podName,
+			Namespace: myresource.Namespace,
+			OwnerReferences: []metav1.OwnerReference{
+				*metav1.NewControllerRef(myresource, v1alpha1.SchemeGroupVersion.WithKind("MyResource")),
+			},
+			Labels: labels,
+		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{
+					Name: "echoserver",
+					Image: "reshnm/echoserver:latest",
+					Env: []corev1.EnvVar{
+						corev1.EnvVar{
+							Name:      "ECHO_MESSAGE",
+							Value:     myresource.Spec.Message,
+						},
+					},
+					Ports: []corev1.ContainerPort{
+						corev1.ContainerPort{
+							ContainerPort: 80,
+						},
+					},
+				},
+			},
+		},
+	}
+}

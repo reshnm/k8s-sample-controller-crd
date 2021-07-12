@@ -3,5 +3,4 @@ kind: MyResource
 metadata:
   name: example-myresource
 spec:
-  message: The Answer
-  someValue: 42
+  message: Hello World from example-myresource
