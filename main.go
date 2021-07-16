@@ -26,7 +26,7 @@ func createClients() (*kubernetes.Clientset, *samplecontrollerClientset.Clientse
 		klog.Fatal("failed to build config", err)
 	}
 
-	kubeClient , err := kubernetes.NewForConfig(config)
+	kubeClient, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		klog.Fatal("failed to create kubeClient")
 	}
@@ -47,7 +47,7 @@ func main() {
 
 	myresourceInformerFactory := sampleComtrollerInformers.NewSharedInformerFactoryWithOptions(
 		sampleControllerClient,
-		time.Second * 30,
+		time.Second*30,
 		sampleComtrollerInformers.WithNamespace(metav1.NamespaceDefault))
 
 	podInformerFactory := informers.NewSharedInformerFactoryWithOptions(

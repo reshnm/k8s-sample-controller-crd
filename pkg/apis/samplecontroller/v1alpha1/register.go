@@ -15,7 +15,7 @@ var SchemeGroupVersion = schema.GroupVersion{
 
 var (
 	SchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes)
-	AddToScheme = SchemeBuilder.AddToScheme
+	AddToScheme   = SchemeBuilder.AddToScheme
 )
 
 func Resource(resource string) schema.GroupResource {

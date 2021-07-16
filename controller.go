@@ -21,13 +21,13 @@ import (
 )
 
 type Controller struct {
-	kubeClient *kubernetes.Clientset
+	kubeClient             *kubernetes.Clientset
 	samplecontrollerClient *samplecontrollerClientset.Clientset
-	workqueue workqueue.RateLimitingInterface
-	myresourceInformer samplecontroller.MyResourceInformer
-	myresourceSynced cache.InformerSynced
-	podInformer informercorev1.PodInformer
-	podsSynced cache.InformerSynced
+	workqueue              workqueue.RateLimitingInterface
+	myresourceInformer     samplecontroller.MyResourceInformer
+	myresourceSynced       cache.InformerSynced
+	podInformer            informercorev1.PodInformer
+	podsSynced             cache.InformerSynced
 }
 
 func CreateController(
@@ -37,13 +37,13 @@ func CreateController(
 	podInformer informercorev1.PodInformer) *Controller {
 
 	controller := &Controller{
-		kubeClient: kubeClient,
+		kubeClient:             kubeClient,
 		samplecontrollerClient: samplecontrollerClient,
-		workqueue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Myresource"),
-		myresourceInformer: myresourceInformer,
-		myresourceSynced: myresourceInformer.Informer().HasSynced,
-		podInformer: podInformer,
-		podsSynced: podInformer.Informer().HasSynced,
+		workqueue:              workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Myresource"),
+		myresourceInformer:     myresourceInformer,
+		myresourceSynced:       myresourceInformer.Informer().HasSynced,
+		podInformer:            podInformer,
+		podsSynced:             podInformer.Informer().HasSynced,
 	}
 
 	myresourceInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -226,12 +226,12 @@ func (c *Controller) handlePod(obj interface{}) {
 
 func newPod(myresource *v1alpha1.MyResource, podName string) *corev1.Pod {
 	labels := map[string]string{
-		"app": "echoserver",
+		"app":        "echoserver",
 		"controller": myresource.Name,
 	}
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: podName,
+			Name:      podName,
 			Namespace: myresource.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(myresource, v1alpha1.SchemeGroupVersion.WithKind("MyResource")),
@@ -241,12 +241,12 @@ func newPod(myresource *v1alpha1.MyResource, podName string) *corev1.Pod {
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{
 				{
-					Name: "echoserver",
+					Name:  "echoserver",
 					Image: "reshnm/echoserver:latest",
 					Env: []corev1.EnvVar{
 						{
-							Name:      "ECHO_MESSAGE",
-							Value:     myresource.Spec.Message,
+							Name:  "ECHO_MESSAGE",
+							Value: myresource.Spec.Message,
 						},
 					},
 					Ports: []corev1.ContainerPort{
