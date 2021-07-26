@@ -4,6 +4,7 @@ import (
 	"flag"
 	"os"
 	"os/signal"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"syscall"
 	"time"
 
@@ -12,26 +13,36 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 var (
 	kubeconfig string
 )
 
-func createClients() (*kubernetes.Clientset, *samplecontrollerClientset.Clientset) {
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-	if err != nil {
-		klog.Fatal("failed to build config", err)
+func createControllerManager() manager.Manager {
+	mgrOpts := manager.Options{
+		LeaderElection:     false,
+		Port:               9443,
+		MetricsBindAddress: "0",
 	}
 
-	kubeClient, err := kubernetes.NewForConfig(config)
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), mgrOpts)
+	if err != nil {
+		klog.Fatal("failed to create new controller manager", err)
+	}
+
+	return mgr
+}
+
+func createClients(mgr manager.Manager) (*kubernetes.Clientset, *samplecontrollerClientset.Clientset) {
+	kubeClient, err := kubernetes.NewForConfig(mgr.GetConfig())
 	if err != nil {
 		klog.Fatal("failed to create kubeClient")
 	}
 
-	sampleControllerClient, err := samplecontrollerClientset.NewForConfig(config)
+	sampleControllerClient, err := samplecontrollerClientset.NewForConfig(mgr.GetConfig())
 	if err != nil {
 		klog.Fatal("failed to create sampleControllerClient", err)
 	}
@@ -43,7 +54,18 @@ func main() {
 	klog.InitFlags(nil)
 	flag.Parse()
 
-	kubeClient, sampleControllerClient := createClients()
+	mgr := createControllerManager()
+	kubeClient, sampleControllerClient := createClients(mgr)
+
+	crdManager, err := NewCrdManager(mgr)
+	if err != nil {
+		klog.Fatal("failed to create CRD manager: ", err)
+	}
+
+	err = crdManager.EnsureCRDs()
+	if err != nil {
+		klog.Fatal("failed to ensure CRDs: ", err)
+	}
 
 	myresourceInformerFactory := sampleComtrollerInformers.NewSharedInformerFactoryWithOptions(
 		sampleControllerClient,
@@ -75,6 +97,8 @@ func main() {
 	klog.Info("controller stopped")
 }
 
+/*
 func init() {
 	flag.StringVar(&kubeconfig, "kubeconfig", os.Getenv("KUBECONFIG"), "Path to the kubeconfig")
 }
+ */
