@@ -1,4 +1,4 @@
-package main
+package crdmanager
 
 import (
 	"bytes"
@@ -134,7 +134,7 @@ func (m *CRDManager) crdsFromDir() ([]v1.CustomResourceDefinition, error) {
 		crd := &v1.CustomResourceDefinition{}
 		err = decoder.Decode(crd)
 		if err != nil {
-			return nil, fmt.Errorf("failed to decode CRD from file %d: %w", file.Name(), err)
+			return nil, fmt.Errorf("failed to decode CRD from file %q: %w", file.Name(), err)
 		}
 
 		crdList = append(crdList, *crd)

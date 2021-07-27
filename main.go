@@ -1,20 +1,14 @@
 package main
 
 import (
+	"context"
 	"flag"
-	"os"
-	"os/signal"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"syscall"
-	"time"
-
-	samplecontrollerClientset "github.com/reshnm/k8s-sample-controller-crd/pkg/generated/clientset/versioned"
-	sampleComtrollerInformers "github.com/reshnm/k8s-sample-controller-crd/pkg/generated/informers/externalversions"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/informers"
-	"k8s.io/client-go/kubernetes"
+	"github.com/reshnm/k8s-sample-controller-crd/pkg/controllers/myresource"
+	"github.com/reshnm/k8s-sample-controller-crd/pkg/controllers/pod"
+	"github.com/reshnm/k8s-sample-controller-crd/pkg/crdmanager"
 	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 var (
@@ -36,28 +30,13 @@ func createControllerManager() manager.Manager {
 	return mgr
 }
 
-func createClients(mgr manager.Manager) (*kubernetes.Clientset, *samplecontrollerClientset.Clientset) {
-	kubeClient, err := kubernetes.NewForConfig(mgr.GetConfig())
-	if err != nil {
-		klog.Fatal("failed to create kubeClient")
-	}
-
-	sampleControllerClient, err := samplecontrollerClientset.NewForConfig(mgr.GetConfig())
-	if err != nil {
-		klog.Fatal("failed to create sampleControllerClient", err)
-	}
-
-	return kubeClient, sampleControllerClient
-}
-
 func main() {
 	klog.InitFlags(nil)
 	flag.Parse()
 
 	mgr := createControllerManager()
-	kubeClient, sampleControllerClient := createClients(mgr)
 
-	crdManager, err := NewCrdManager(mgr)
+	crdManager, err := crdmanager.NewCrdManager(mgr)
 	if err != nil {
 		klog.Fatal("failed to create CRD manager: ", err)
 	}
@@ -67,38 +46,17 @@ func main() {
 		klog.Fatal("failed to ensure CRDs: ", err)
 	}
 
-	myresourceInformerFactory := sampleComtrollerInformers.NewSharedInformerFactoryWithOptions(
-		sampleControllerClient,
-		time.Second*30,
-		sampleComtrollerInformers.WithNamespace(metav1.NamespaceDefault))
+	myresource.Install(mgr.GetScheme())
+	err = myresource.AddControllerToManager(mgr)
+	if err != nil {
+		klog.Fatalf("error creating MyResource controller: %w", err)
+	}
+	pod.AddControllerToManager(mgr)
 
-	podInformerFactory := informers.NewSharedInformerFactoryWithOptions(
-		kubeClient,
-		time.Second*30,
-		informers.WithNamespace(metav1.NamespaceDefault))
+	klog.Info("starting the controller")
 
-	controller := CreateController(
-		kubeClient,
-		sampleControllerClient,
-		myresourceInformerFactory.Samplecontroller().V1alpha1().MyResources(),
-		podInformerFactory.Core().V1().Pods())
-
-	stopCh := make(chan struct{})
-	defer close(stopCh)
-	myresourceInformerFactory.Start(stopCh)
-	podInformerFactory.Start(stopCh)
-	go controller.Run(stopCh)
-
-	sigTerm := make(chan os.Signal, 1)
-	signal.Notify(sigTerm, syscall.SIGTERM)
-	signal.Notify(sigTerm, syscall.SIGINT)
-	<-sigTerm
-
-	klog.Info("controller stopped")
+	err = mgr.Start(context.TODO())
+	if err != nil {
+		klog.Fatalf("error starting the controller: %w", err)
+	}
 }
-
-/*
-func init() {
-	flag.StringVar(&kubeconfig, "kubeconfig", os.Getenv("KUBECONFIG"), "Path to the kubeconfig")
-}
- */
