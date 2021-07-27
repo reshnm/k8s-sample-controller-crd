@@ -33,7 +33,7 @@ func (c *Controller) Reconcile(ctx context.Context, req reconcile.Request) (reco
 		return reconcile.Result{}, err
 	}
 
-	klog.V(4).Infof("handling MyResource %q, message=%q",
+	klog.V(4).Infof("reconciling MyResource %q, message=%q",
 		req.NamespacedName,
 		myresource.Spec.Message)
 
@@ -48,10 +48,6 @@ func (c *Controller) Reconcile(ctx context.Context, req reconcile.Request) (reco
 				return reconcile.Result{}, err
 			}
 
-			if !metav1.IsControlledBy(pod, myresource) {
-				return reconcile.Result{}, fmt.Errorf("pod %q is not controlled by samplecontroller", podName)
-			}
-
 			err = c.updateMyResource(ctx, myresource, podName)
 			if err != nil {
 				return reconcile.Result{}, err
@@ -64,7 +60,7 @@ func (c *Controller) Reconcile(ctx context.Context, req reconcile.Request) (reco
 
 func (c *Controller) updateMyResource(ctx context.Context, myresource *v1alpha1.MyResource, podName string) error {
 	myresource.Status.PodName = podName
-	err := c.client.Status().Update(ctx, myresource)
+	err := c.client.Update(ctx, myresource)
 
 	if err != nil {
 		klog.Errorf("failed to update status of MyResource '%q'", myresource.Name)

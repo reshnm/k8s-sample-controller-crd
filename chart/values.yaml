@@ -1,0 +1,5 @@
+namespace: test-system
+verbosity: 4
+image: myimage
+dockerconfig: |
+  ...

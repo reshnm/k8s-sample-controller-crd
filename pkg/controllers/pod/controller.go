@@ -33,7 +33,7 @@ func (c *Controller) Reconcile(ctx context.Context, req reconcile.Request) (reco
 			return reconcile.Result{}, nil
 		}
 
-		klog.V(4).Infof("handling Pod %q, phase %q", req.NamespacedName, pod.Status.Phase)
+		klog.V(4).Infof("reconciling Pod %q, phase %q", req.NamespacedName, pod.Status.Phase)
 
 		/*
 			myresource := &v1alpha1.MyResource{}

@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-sample-controller-crd
+  labels:
+    app: k8s-sample-controller-crd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: k8s-sample-controller-crd
+  template:
+    metadata:
+      labels:
+        app: k8s-sample-controller-crd
+    spec:
+      containers:
+        - name: controller
+          image: {{ .Values.image }}
+          args:
+            - "-v={{ .Values.verbosity }}"
+      imagePullSecrets:
+        - name: oci-reg
+      serviceAccountName: k8s-sample-controller-crd

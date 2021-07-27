@@ -17,3 +17,4 @@
 .idea
 k8s-sample-controller-crd
 vendor
+chart/values-real.yaml
