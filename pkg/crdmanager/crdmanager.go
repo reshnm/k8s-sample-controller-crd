@@ -20,10 +20,10 @@ import (
 )
 
 const (
-	embedFSCrdRootDir = "crd"
+	embedFSCrdRootDir = "crdresources"
 )
 
-//go:embed crd/*.yaml
+//go:embed crdresources/*.yaml
 var importedCrdFS embed.FS
 
 type CRDManager struct {
