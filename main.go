@@ -36,7 +36,7 @@ func main() {
 
 	mgr := createControllerManager()
 
-	crdManager, err := crdmanager.NewCrdManager(mgr)
+	crdManager, err := crdmanager.CreateCrdManager(mgr)
 	if err != nil {
 		klog.Fatal("failed to create CRD manager: ", err)
 	}

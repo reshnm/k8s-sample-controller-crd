@@ -31,7 +31,7 @@ type CRDManager struct {
 	crdRawDataFS *embed.FS
 }
 
-func NewCrdManager(mgr manager.Manager) (*CRDManager, error) {
+func CreateCrdManager(mgr manager.Manager) (*CRDManager, error) {
 	apiExtensionScheme := runtime.NewScheme()
 	apiextinstall.Install(apiExtensionScheme)
 	kubeClient, err := client.New(mgr.GetConfig(), client.Options{Scheme: apiExtensionScheme})
