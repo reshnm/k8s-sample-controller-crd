@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"github.com/reshnm/k8s-sample-controller-crd/pkg/controllers/myresource"
 	"github.com/reshnm/k8s-sample-controller-crd/pkg/controllers/pod"
@@ -9,6 +8,7 @@ import (
 	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 )
 
 var (
@@ -16,13 +16,7 @@ var (
 )
 
 func createControllerManager() manager.Manager {
-	mgrOpts := manager.Options{
-		LeaderElection:     false,
-		Port:               9443,
-		MetricsBindAddress: "0",
-	}
-
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), mgrOpts)
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), manager.Options{})
 	if err != nil {
 		klog.Fatal("failed to create new controller manager", err)
 	}
@@ -55,8 +49,10 @@ func main() {
 
 	klog.Info("starting the controller")
 
-	err = mgr.Start(context.TODO())
+	err = mgr.Start(signals.SetupSignalHandler())
 	if err != nil {
 		klog.Fatalf("error starting the controller: %w", err)
 	}
+
+	klog.Info("controller stopped")
 }
